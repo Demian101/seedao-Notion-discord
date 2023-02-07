@@ -3,7 +3,7 @@
 
 # import argparse
 import time
-from notion_utils import Notion_filter_offering_a_reward_task_list, Notion_filter_task_detail
+from notion_utils import Notion_filter_offering_a_reward_task_list, Notion_filter_task_detail, fetch_with_retry, Notion_filter_offering_all_task_list
 from send_webhook import *
 from pprint import pprint
 from notion_client import Client
@@ -45,8 +45,7 @@ def query_database():
     # print('-'*50)
     return list_dbs
 
-def data_process():
-    res = query_database()
+def process_res_then_send_webhook(res):
     new_task_list = Notion_filter_offering_a_reward_task_list(res)
     task_list = load_or_create_task_list()
     # 求差集，在 new_task_list 中但不在 A 中
@@ -54,37 +53,35 @@ def data_process():
     print('data_process task_list', new_item)
     retry_count = 0
     for item in new_item:
+        # 根据任务名称进行筛选
         name, description, recruit_ddl, reward, contact_dis, contact_wx, url = Notion_filter_task_detail(res, item)
-        print('info..', name, url, description[:13], recruit_ddl, reward[:13])
+        print('info..', name, url, description, recruit_ddl, reward)
         
         while True:
             try:
-                send_to_webhook_url(name, description, recruit_ddl, reward, contact_dis, contact_wx, url)
+                send_to_webhook_url(name, description, recruit_ddl, reward, contact_dis, contact_wx, url, new_task_list)
                 break
             except Exception as e:
                 if retry_count > 5:
                     raise Exception("Please check the internet connection with Discord.")  # Exception("Retry limit exceeded")
                 print(str(send_to_webhook_url.__name__)+" failed, retrying in 1 seconds...")
                 time.sleep(1)
-        
     task_list += new_item
     update_task_list(task_list)
 
+def process_res_then_send_discord_slash_command(res):
+    """ for discord bot dict slash command """
+    task_dict = load_or_create_task_list("notion_task_dict.pkl")
+    dic_res = Notion_filter_offering_all_task_list(res)
+    update_task_list(dic_res, "notion_task_dict.pkl")
 
-def fetch_with_retry(retry_function, retry_limit=3, ):
-    print('fetch_with_retry', retry_function)
-    retry_count = 0
-    while True:
-        try:
-            retry_function()
-            break
-            
-        except Exception as e:
-            retry_count += 1
-            if retry_count > retry_limit:
-                raise Exception  # Exception("Retry limit exceeded")
-            print(str(retry_function.__name__)+" failed, retrying in 1 seconds...")
-            time.sleep(1)
+
+def data_process():
+    res = query_database()
+    process_res_then_send_webhook(res)
+    process_res_then_send_discord_slash_command(res)
+
+
 
 def load_or_create_task_list(file_name="notion_task_list.pkl"):
     """
@@ -127,19 +124,3 @@ if __name__ == "__main__":
     #[test]
     # test_load_or_create_task_list()
     keep_calling_fetch()
-
-
-
-
-
-
-"""
-Todo : 
- 0. Diff 函数：
-    每隔 x min fetch() Notion Content
-    filter 悬赏状态 === "招募中", 对比现有的并存储到文件；
-    - 如果发现是新的： 向 Webhook 发布内容。
-    - 旧的： 什么也不做。
- 1. Webhook 的构建.
-
-"""

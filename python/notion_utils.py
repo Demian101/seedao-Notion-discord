@@ -1,5 +1,5 @@
-import json
-
+import time
+from pprint import pprint
 
 """
 json_data = [{
@@ -31,16 +31,61 @@ json_data = [{
 """
 # json_data = [{"archived": false, "properties": {"悬赏状态": {"id": "ArpA", "select": {"color": "yellow", "id": "2d5c85be-12ec-4a41-89ab-3cfd82a6a75b", "name": "招募中"}}}, "url": "https://www.notion.so/e9ee03abe3d5440ba6ba7476a923d930"}, {"archived": false, "properties": {"悬赏状态": {"id": "ArpA", "select": {"color": "yellow", "id": "2d5c85be-12ec-4a41-89ab-3cfd82a6a75b", "name": "招募中"}}}, "url": "https://www.notion.so/e9ee03abe3d5440ba6ba7476a923d930"}]
 
+def fetch_with_retry(retry_function, retry_limit=3, ):
+    print('fetch_with_retry', retry_function)
+    retry_count = 0
+    while True:
+        try:
+            retry_function()
+            break
+            
+        except Exception as e:
+            retry_count += 1
+            if retry_count > retry_limit:
+                raise Exception  # Exception("Retry limit exceeded")
+            print(str(retry_function.__name__)+" failed, retrying in 1 seconds...")
+            time.sleep(1)
+
+
 def Notion_filter_offering_a_reward_task_list(res, reward_flag="招募中"):
+    """获取所有 “招募中” 的 [{task,url},,{tasl,url} , ... , ]"""
     try:
+        task_list = []
         # print('len(res_list)', len(res_list))
         # print('res[0]', res[0])  # ["properties"]["悬赏状态"]["select"]["name"]
-        task_list = [item["properties"]["悬赏名称"]["title"][0]["plain_text"] 
-                        for item in res 
-                            if item["properties"]["悬赏状态"]["select"]["name"] == "招募中"]
+        for item in res :
+            if len(item["properties"]["悬赏名称"]["title"]) == 0:
+                continue
+            else: # item["properties"]["悬赏状态"]["select"]["name"] == reward_flag:
+                print("item", item)
+                task_list.append(item["properties"]["悬赏名称"]["title"][0]["plain_text"] )
+                            
         return task_list
     except Exception as e:
         raise Exception 
+
+def Notion_filter_offering_all_task_list(res, reward_flag="招募中"):
+    try:
+        li_res = []
+        for item in res :
+            di = {}
+            print("item....", item)
+            if len(item["properties"]["悬赏名称"]["title"]) == 0 or item["properties"]["悬赏状态"]["select"] is None:
+                continue
+
+            if item["properties"]["悬赏状态"]["select"]["name"] == reward_flag:
+                if len(item["properties"]["悬赏类型"]["multi_select"]) == 0:
+                    di['type'] = ""
+                else: 
+                    li = item["properties"]["悬赏类型"]["multi_select"]
+                    di['type'] = ", ".join([item["name"] for item in li])
+                di['task'] = item["properties"]["悬赏名称"]["title"][0]["plain_text"]
+                di['url']  = item["url"]
+            li_res.append(di)
+        return li_res
+    except Exception as e:
+        raise Exception 
+
 
 def _deal_with_properties_rich_text(dict_, field="任务说明"):
     """
@@ -49,7 +94,7 @@ def _deal_with_properties_rich_text(dict_, field="任务说明"):
         '任务说明': {'id': 'Bzg%40', 'rich_text': [], 'type': 'rich_text'},
     """
     if len(dict_["properties"][field]["rich_text"]) == 0:
-        return "暂无【"+str(field)+"】，请到 Notion 查看。"
+        return "" # "暂无【"+str(field)+"】，请到 Notion 查看。"
     else: 
         return dict_["properties"][field]["rich_text"][0]["plain_text"]
 
@@ -62,7 +107,7 @@ def _deal_with_properties_title(dict_, field="悬赏名称"):
                         'plain_text': 'Web3 PBL共学小组招募！',
     """
     if len(dict_["properties"][field]["title"]) == 0:
-        return "暂无【"+str(field)+"】，请到 Notion 查看。"
+        return "" # "暂无【"+str(field)+"】，请到 Notion 查看。"
     else: 
         return dict_["properties"][field]["title"][0]["plain_text"]
 
@@ -102,8 +147,10 @@ def _deal_with_properties_rollup(dict_, field):
      'type': 'rollup'
    },
     """
+    if len(dict_["properties"][field]["rollup"]["array"]) == 0:
+        return ""
     if len(dict_["properties"][field]["rollup"]["array"][0]["rich_text"]) == 0:
-        return None
+        return ""
     else:
         li = dict_["properties"][field]["rollup"]["array"]
         return "; ".join([item["rich_text"][0]["plain_text"] for item in li])
@@ -114,6 +161,7 @@ def _deal_with_properties_rollup(dict_, field):
 def Notion_filter_task_detail(res, new_task):
     # new_task = '【治理公会】协调小组重启招募'
     try:
+        # 根据任务名称进行筛选
         task_list = [item for item in res 
                         if item["properties"]["悬赏名称"]["title"][0]["plain_text"]  == new_task]
         
