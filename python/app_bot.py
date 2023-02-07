@@ -8,8 +8,6 @@ import os
 
 load_dotenv()
 
-# slash_command_token = "MTA2ODM5MzE1MTg3OTk3MDg4Ng.GCS4oW.hXaJ8k9mylXfzKizYjB-j5lJ9T8HjNYQMwZmh8"
-# slash_command_token = "MTA2OTIyNjI1NDA4OTMzOTAwMA.GU9nie.afW-bNGMdvFLI_WqoGjNnCFb99WEtundYhHky4"
 slash_command_token = os.environ.get("APP_BOT_TOKEN_FOR_SLASH_CMD")
 
 bot = interactions.Client(token=slash_command_token)
