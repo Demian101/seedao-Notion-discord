@@ -54,12 +54,12 @@ def process_res_then_send_webhook(res):
     retry_count = 0
     for item in new_item:
         # 根据任务名称进行筛选
-        name, description, recruit_ddl, reward, contact_dis, contact_wx, url = Notion_filter_task_detail(res, item)
-        print('info..', name, url, description, recruit_ddl, reward)
+        btype, name, description, recruit_ddl, reward, contact_dis, contact_wx, url = Notion_filter_task_detail(res, item)
+        print('\ninfo..\n', name, url, description, recruit_ddl, reward)
         
         while True:
             try:
-                send_to_webhook_url(name, description, recruit_ddl, reward, contact_dis, contact_wx, url, new_task_list)
+                send_to_webhook_url(btype, name, description, recruit_ddl, reward, contact_dis, contact_wx, url, new_task_list)
                 break
             except Exception as e:
                 if retry_count > 5:

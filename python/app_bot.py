@@ -44,7 +44,7 @@ contents = """
 
 async def my_first_command(ctx: interactions.CommandContext):
     res, li = retry_request(), []
-    print("lis_res: \n", res)
+    # print("lis_res: \n", res)
 
     for i, item in enumerate(res):
         if i >= 10: break

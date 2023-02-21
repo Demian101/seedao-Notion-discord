@@ -69,34 +69,58 @@ def Notion_filter_offering_all_task_list(res, reward_flag="招募中"):
         li_res = []
         for item in res :
             di = {}
-            print("item....", item)
+            # print("item....", item)
             if len(item["properties"]["悬赏名称"]["title"]) == 0 or item["properties"]["悬赏状态"]["select"] is None:
                 continue
 
             if item["properties"]["悬赏状态"]["select"]["name"] == reward_flag:
-                if len(item["properties"]["悬赏类型"]["multi_select"]) == 0:
-                    di['type'] = ""
-                else: 
-                    li = item["properties"]["悬赏类型"]["multi_select"]
-                    di['type'] = ", ".join([item["name"] for item in li])
-                di['task'] = item["properties"]["悬赏名称"]["title"][0]["plain_text"]
+                #if len(item["properties"]["悬赏类型"]["multi_select"]) == 0:
+                #    di['type'] = ""
+                #else: 
+                #    li = item["properties"]["悬赏类型"]["multi_select"]
+                #    di['type'] = ", ".join([item["name"] for item in li])
+                di['type'] = _deal_with_properties_multi_select(item,)
+
+                #title_lis = item["properties"]["悬赏名称"]["title"]
+                #di['task'] = "".join([i["plain_text"] for i in title_lis])
+                di['task'] = _deal_with_properties_title(item,)
+
                 di['url']  = item["url"]
-            li_res.append(di)
+                li_res.append(di)
+        # print("li_res", li_res)
         return li_res
     except Exception as e:
         raise Exception 
 
+def _deal_with_properties_multi_select(dict_, field="悬赏类型"):
+    if len(dict_["properties"]["悬赏类型"]["multi_select"]) == 0:
+        return ""
+    else: 
+        li = dict_["properties"]["悬赏类型"]["multi_select"]
+        return ", ".join([i["name"] for i in li])
 
 def _deal_with_properties_rich_text(dict_, field="任务说明"):
     """
     处理富文本可能为空的情况
       'properties': {
         '任务说明': {'id': 'Bzg%40', 'rich_text': [], 'type': 'rich_text'},
+
+    '任务说明': {
+      'rich_text': [
+          { 
+            'type': 'text', 
+            'text': {'content': '我们希望...', 'link': None}, 
+            'annotations': "xx", 
+            'plain_text': '我们希望通过城市联络人计划，来实现SeeDAO在物理世界的全球连接。这种连接不是基于一个个物理空间，而是基于空间里的人。——SeeDAO的城市联络人在哪里，SeeDAO的线下据点就在哪里。来成为这张大航海世界地图的连接者吧！\n\nhttps://mirror.xyz/seedao.eth/qLGgLUlYGwXK9xGgENTeviePIuZmOfc7gyPO7z0Dsxg', 'href': None
+          }
+        ]
+    },
     """
     if len(dict_["properties"][field]["rich_text"]) == 0:
-        return "" # "暂无【"+str(field)+"】，请到 Notion 查看。"
+        return ""
     else: 
-        return dict_["properties"][field]["rich_text"][0]["plain_text"]
+        res_list = dict_["properties"][field]["rich_text"] # a list
+        return "".join([i["plain_text"] for i in res_list])
 
 def _deal_with_properties_title(dict_, field="悬赏名称"):
     """
@@ -105,14 +129,43 @@ def _deal_with_properties_title(dict_, field="悬赏名称"):
         '悬赏名称': {
             'title': [{'annotations': { .. },
                         'plain_text': 'Web3 PBL共学小组招募！',
+
+    ...............
+
+    {'悬赏名称': 
+      {'id': 'title',
+        'title': [{'annotations': {'bold': False,
+                                  'code': False,
+                                  'color': 'default',
+                                  'italic': False,
+                                  'strikethrough': False,
+                                  'underline': False},
+                  'href': None,
+                  'plain_text': '【新手任务】',
+                  'text': {'content': '【新手任务】', 'link': None},
+                  'type': 'text'},
+                  {'annotations': {'bold': True,
+                                  'code': False,
+                                  'color': 'default',
+                                  'italic': False,
+                                  'strikethrough': False,
+                                  'underline': False},
+                  'href': None,
+                  'plain_text': 'SeeDAO口述史项目招募采访者！',
+                  'text': {'content': 'SeeDAO口述史项目招募采访者！', 'link': None},
+                  'type': 'text'}],
+        'type': 'title'}}
     """
     if len(dict_["properties"][field]["title"]) == 0:
-        return "" # "暂无【"+str(field)+"】，请到 Notion 查看。"
-    else: 
-        return dict_["properties"][field]["title"][0]["plain_text"]
+        return ""
+    else:
+        title_lis = dict_["properties"][field]["title"]
+        return "".join([i["plain_text"] for i in title_lis])
+
+
 
 def _deal_with_properties_rollup(dict_, field):
-    """ 处理 rollup 可能为空的情况 
+    """ 处理 rollup（联系人） 可能为空的情况 
     'properties': {
    '联络方式：Discord': {
       'id': 'uSj%7D',
@@ -157,14 +210,13 @@ def _deal_with_properties_rollup(dict_, field):
 
 
 
-
 def Notion_filter_task_detail(res, new_task):
     # new_task = '【治理公会】协调小组重启招募'
     try:
         # 根据任务名称进行筛选
         task_list = [item for item in res 
                         if item["properties"]["悬赏名称"]["title"][0]["plain_text"]  == new_task]
-        
+        btype       = _deal_with_properties_multi_select(task_list[0], "悬赏类型")
         name        = _deal_with_properties_title(task_list[0], )
         description = _deal_with_properties_rich_text(task_list[0], )
         recruit_ddl = _deal_with_properties_rich_text(task_list[0], "招募截止时间")
@@ -172,7 +224,7 @@ def Notion_filter_task_detail(res, new_task):
         contact_dis = _deal_with_properties_rollup(task_list[0], "联络方式：Discord")
         contact_wx  = _deal_with_properties_rollup(task_list[0], "联络方式：微信")
         url         =  task_list[0]["url"]
-        return (name, description, recruit_ddl, reward, contact_dis, contact_wx, url)
+        return (btype, name, description, recruit_ddl, reward, contact_dis, contact_wx, url)
 
     except Exception as e:
         raise Exception("Notion form field has changed, pls check it.")

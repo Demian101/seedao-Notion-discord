@@ -14,7 +14,7 @@ WEBHOOK_URL = os.environ.get("WEBHOOK_URL")
 
 
 
-def send_to_webhook_url(name, description, recruit_ddl, reward, contact_dis, contact_wx, url, new_task_list):
+def send_to_webhook_url(btype, name, description, recruit_ddl, reward, contact_dis, contact_wx, url, new_task_list):
     """ send Webhook to Discord 
       有时候会失败，需要多做几次，直到成功？
     获取到 @悬赏猎人 ：
@@ -24,6 +24,7 @@ def send_to_webhook_url(name, description, recruit_ddl, reward, contact_dis, con
 
     content = """
 铛铛！有新悬赏发布啦！还不来看看？<@&1068370999273328731>
+悬赏类型：{}
 悬赏名称：{}
 悬赏说明：{}
 贡献报酬：{}
@@ -38,12 +39,12 @@ def send_to_webhook_url(name, description, recruit_ddl, reward, contact_dis, con
 酒馆中还有 {} 个悬赏，来酒馆坐坐吧，说不定能有惊人的发现哦：
 <https://www.notion.so/seedao/73d83a0a258d4ac5afa57a997114755a>
 """ 
-    new_task_text= "\n".join(new_task_list[:5])
+    new_task_text= "* "+"\n* ".join(new_task_list[:5])
 
     webhook = DiscordWebhook(
         url=WEBHOOK_URL,
         content=content.format(
-            name, description, reward, recruit_ddl, contact_dis, contact_wx, url, new_task_text, len(new_task_list)))
+            btype, name, description, reward, recruit_ddl, contact_dis, contact_wx, url, new_task_text, len(new_task_list)))
     response = webhook.execute()
     return response
 
