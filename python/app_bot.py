@@ -5,6 +5,7 @@ from notion_utils import Notion_filter_offering_all_task_list, fetch_with_retry
 from pprint import pprint
 from dotenv import load_dotenv
 import os
+import asyncio
 
 load_dotenv()
 
@@ -40,7 +41,7 @@ contents = """
 
 @bot.command(
     name="bounty_list", 
-    description="list all tasks that are in the bounty.",)
+    description="列出最近的 10 条悬赏，如果报错可能是网络问题，请点击右上角 Retry",)
 
 async def my_first_command(ctx: interactions.CommandContext):
     res, li = retry_request(), []
@@ -49,11 +50,13 @@ async def my_first_command(ctx: interactions.CommandContext):
     for i, item in enumerate(res):
         if i >= 10: break
         try:
-            print(item['task'], item['url'])
+            # print(item['task'], item['url'])
             s = "【{}】 {}   [{}]".format(item['type'], item['task'], item['url'])
         except: continue
         li.append(s)
-    
+    await ctx.defer() # 防止 Discord 3s 不返回就报错
+    # 等待 10 秒钟
+    await asyncio.sleep(10)
     await ctx.send(contents.format("\n".join(li),))
 
 
