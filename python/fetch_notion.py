@@ -47,10 +47,13 @@ def query_database():
 
 def process_res_then_send_webhook(res):
     new_task_list = Notion_filter_offering_a_reward_task_list(res)
+    print("---"*20)
+    print("new_task_list:\n", new_task_list)
     task_list = load_or_create_task_list()
+    print("task_list:\n", new_task_list)
     # 求差集，在 new_task_list 中但不在 A 中
     new_item = list(set(new_task_list).difference(set(task_list)))
-    print('data_process task_list', new_item)
+    print('data_process new_item\n', new_item)
     retry_count = 0
     for item in new_item:
         # 根据任务名称进行筛选

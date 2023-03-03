@@ -24,14 +24,21 @@ def send_to_webhook_url(btype, name, description, recruit_ddl, reward, contact_d
 
     content = """
 铛铛！有新悬赏发布啦！还不来看看？<@&1068370999273328731>
-悬赏类型：{}
-悬赏名称：{}
-悬赏说明：{}
-贡献报酬：{}
-截止时间：{}
-联系方式#Discord：{}
-联系方式#Wechat：{}
-任务 Notion 链接：<{}>
+
+【悬赏类型】：{}
+
+【悬赏名称】：{}
+
+【悬赏说明】：{}
+
+【贡献报酬】：{}
+
+【截止时间】：{}
+
+【联系方式#Discord】：{}
+【联系方式#Wechat】：{}
+
+【任务 Notion 链接】：<{}>
 
 这些近期发布的悬赏也一起看看吧：
 {}
@@ -39,12 +46,16 @@ def send_to_webhook_url(btype, name, description, recruit_ddl, reward, contact_d
 酒馆中还有 {} 个悬赏，来酒馆坐坐吧，说不定能有惊人的发现哦：
 <https://www.notion.so/seedao/73d83a0a258d4ac5afa57a997114755a>
 """ 
-    new_task_text= "* "+"\n* ".join(new_task_list[:5])
+    # print("send webhook new_task_list", new_task_list)
+    # print("send webhook n name", name)
+    new_task_list_ = new_task_list.copy()
+    new_task_list_.remove(name)
+    new_task_text= "* "+"\n* ".join(new_task_list_[:5])
 
     webhook = DiscordWebhook(
         url=WEBHOOK_URL,
         content=content.format(
-            btype, name, description, reward, recruit_ddl, contact_dis, contact_wx, url, new_task_text, len(new_task_list)))
+            btype, name, description, reward, recruit_ddl, contact_dis, contact_wx, url, new_task_text, len(new_task_list_)))
     response = webhook.execute()
     return response
 

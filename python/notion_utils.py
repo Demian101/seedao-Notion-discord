@@ -48,19 +48,11 @@ def fetch_with_retry(retry_function, retry_limit=3, ):
 
 
 def Notion_filter_offering_a_reward_task_list(res, reward_flag="招募中"):
-    """获取所有 “招募中” 的 [{task,url},,{tasl,url} , ... , ]"""
+    """ 获取所有 “招募中” 的 [task, task2, task3, ... ] """
     try:
-        task_list = []
-        # print('len(res_list)', len(res_list))
-        # print('res[0]', res[0])  # ["properties"]["悬赏状态"]["select"]["name"]
-        for item in res :
-            if len(item["properties"]["悬赏名称"]["title"]) == 0:
-                continue
-            else: # item["properties"]["悬赏状态"]["select"]["name"] == reward_flag:
-                print("item", item)
-                task_list.append(item["properties"]["悬赏名称"]["title"][0]["plain_text"] )
-                            
-        return task_list
+        li_res = Notion_filter_offering_all_task_list(res, )
+        return [i["task"] for i in li_res]
+            
     except Exception as e:
         raise Exception 
 
@@ -209,22 +201,21 @@ def _deal_with_properties_rollup(dict_, field):
         return "; ".join([item["rich_text"][0]["plain_text"] for item in li])
 
 
-
 def Notion_filter_task_detail(res, new_task):
     # new_task = '【治理公会】协调小组重启招募'
     try:
         # 根据任务名称进行筛选
-        task_list = [item for item in res 
-                        if item["properties"]["悬赏名称"]["title"][0]["plain_text"]  == new_task]
-        btype       = _deal_with_properties_multi_select(task_list[0], "悬赏类型")
-        name        = _deal_with_properties_title(task_list[0], )
-        description = _deal_with_properties_rich_text(task_list[0], )
-        recruit_ddl = _deal_with_properties_rich_text(task_list[0], "招募截止时间")
-        reward      = _deal_with_properties_rich_text(task_list[0], "贡献报酬")
-        contact_dis = _deal_with_properties_rollup(task_list[0], "联络方式：Discord")
-        contact_wx  = _deal_with_properties_rollup(task_list[0], "联络方式：微信")
-        url         =  task_list[0]["url"]
-        return (btype, name, description, recruit_ddl, reward, contact_dis, contact_wx, url)
+        for item in res:
+            if _deal_with_properties_title(item, "悬赏名称")  == new_task:                        
+                btype       = _deal_with_properties_multi_select(item, "悬赏类型")
+                name        = _deal_with_properties_title(item, )
+                description = _deal_with_properties_rich_text(item, )
+                recruit_ddl = _deal_with_properties_rich_text(item, "招募截止时间")
+                reward      = _deal_with_properties_rich_text(item, "贡献报酬")
+                contact_dis = _deal_with_properties_rollup(item, "联络方式：Discord")
+                contact_wx  = _deal_with_properties_rollup(item, "联络方式：微信")
+                url         =  item["url"]
+                return (btype, name, description, recruit_ddl, reward, contact_dis, contact_wx, url)
 
     except Exception as e:
         raise Exception("Notion form field has changed, pls check it.")
