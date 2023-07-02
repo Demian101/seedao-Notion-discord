@@ -13,7 +13,6 @@ slash_command_token = os.environ.get("APP_BOT_TOKEN_FOR_SLASH_CMD")
 
 bot = interactions.Client(token=slash_command_token)
 
-
 def get_all_task_from_database():
     res = query_database()
     lis_res = Notion_filter_offering_all_task_list(res)
